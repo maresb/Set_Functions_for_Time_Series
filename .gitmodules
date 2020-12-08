@@ -1,7 +1,8 @@
 [submodule "repos/keras-transformer"]
 	path = repos/keras-transformer
-	url = https://github.com/ExpectationMax/keras-transformer.git
+	url = https://github.com/maresb/keras-transformer
+        branch = tfv2
 [submodule "repos/medical_ts_datasets"]
 	path = repos/medical_ts_datasets
-	url = https://github.com/ExpectationMax/medical_ts_datasets.git
-	branch = merge_with_seft_dataformat
+	url = https://github.com/maresb/medical_ts_datasets
+	branch = tfv2
