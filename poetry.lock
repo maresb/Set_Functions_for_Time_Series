@@ -670,7 +670,7 @@ opt-einsum = ">=2.3.2"
 protobuf = ">=3.6.1"
 six = ">=1.10.0"
 tensorboard = ">=1.15.0"
-tensorflow-estimator = "2.3.1"
+tensorflow-estimator = "2.3.0"
 termcolor = ">=1.1.0"
 wrapt = ">=1.11.1"
 
@@ -733,7 +733,7 @@ marker = "sys_platform != \"linux\" or sys_platform == \"linux\""
 name = "tensorflow-estimator"
 optional = false
 python-versions = "*"
-version = "2.3.1"
+version = "2.3.0"
 
 [[package]]
 category = "main"
