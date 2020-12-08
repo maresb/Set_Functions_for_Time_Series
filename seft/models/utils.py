@@ -128,9 +128,8 @@ def add_scope(fn):
         # Start with a '/' to indicate absolute address
         class_name_scope = self.name
         function_name_scope = fn_name.replace('_', '-')
-        with tf.name_scope(None):
-            with tf.compat.v1.name_scope(class_name_scope+function_name_scope):
-                return fn(self, *args, **kwargs)
+        with tf.name_scope(class_name_scope+function_name_scope+'/'):
+            return fn(self, *args, **kwargs)
     return wrapped_fn
 
 
