@@ -151,7 +151,7 @@ class TrainingLoop(Callable):
             weights = \
                 tf.constant([class_weights[i] for i in range(len(class_weights))])
             sample_weights = tf.gather(weights, tf.reshape(labels, (-1, )), axis=0)
-            sample_weights = tf.reshape(sample_weights, tf.shape(labels)[:-1])
+            sample_weights = tf.reshape(sample_weights, tf.shape(input=labels)[:-1])
             return preprocessed_ts, labels, sample_weights
 
         return combined_fn
@@ -294,10 +294,10 @@ class TrainingLoop(Callable):
     def __call__(self):
         if self.debug:
             from tensorflow.python import debug as tf_debug
-            sess = tf.keras.backend.get_session()
+            sess = tf.compat.v1.keras.backend.get_session()
             sess = tf_debug.LocalCLIDebugWrapperSession(
                 sess, ui_type="readline")
-            tf.keras.backend.set_session(sess)
+            tf.compat.v1.keras.backend.set_session(sess)
 
         train_iter, steps_per_epoch, val_iter, val_steps = \
             self._prepare_dataset_for_training()

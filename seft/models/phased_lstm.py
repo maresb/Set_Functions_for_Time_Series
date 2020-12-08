@@ -94,10 +94,10 @@ class PhasedLSTMCell(tf.keras.layers.Layer):
                 self._period_init_min, self._period_init_max))
         self.phase = self.add_weight(
             'phase', shape=[self._num_units],
-            initializer=tf.initializers.random_uniform(0., self.period.initial_value))
+            initializer=tf.compat.v1.initializers.random_uniform(0., self.period.initial_value))
         self.ratio_on = self.add_weight(
             "ratio_on", [self._num_units],
-            initializer=tf.constant_initializer(self._ratio_on),
+            initializer=tf.compat.v1.constant_initializer(self._ratio_on),
             trainable=self._trainable_ratio_on)
 
     def build(self, input_shapes):
@@ -116,7 +116,7 @@ class PhasedLSTMCell(tf.keras.layers.Layer):
 
     @property
     def state_size(self):
-        return tf.nn.rnn_cell.LSTMStateTuple(self._num_units, self._num_units)
+        return tf.compat.v1.nn.rnn_cell.LSTMStateTuple(self._num_units, self._num_units)
 
     @property
     def output_size(self):
@@ -178,13 +178,13 @@ class PhasedLSTMCell(tf.keras.layers.Layer):
         k_down = 2 - k_up
         k_closed = self._leak * cycle_ratio
 
-        k = tf.where(cycle_ratio < self.ratio_on, k_down, k_closed)
-        k = tf.where(cycle_ratio < 0.5 * self.ratio_on, k_up, k)
+        k = tf.compat.v1.where(cycle_ratio < self.ratio_on, k_down, k_closed)
+        k = tf.compat.v1.where(cycle_ratio < 0.5 * self.ratio_on, k_up, k)
 
         new_c = k * new_c + (1 - k) * c_prev
         new_h = k * new_h + (1 - k) * h_prev
 
-        new_state = tf.nn.rnn_cell.LSTMStateTuple(new_c, new_h)
+        new_state = tf.compat.v1.nn.rnn_cell.LSTMStateTuple(new_c, new_h)
         return new_h, new_state
 
 

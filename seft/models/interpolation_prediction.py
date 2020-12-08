@@ -22,7 +22,7 @@ class single_channel_interp(tf.keras.layers.Layer):
         self.kernel = self.add_weight(
             name='kernel',
             shape=(self.d_dim, ),
-            initializer=tf.keras.initializers.Constant(value=0.0),
+            initializer=tf.compat.v1.keras.initializers.Constant(value=0.0),
             trainable=True)
         super(single_channel_interp, self).build(input_shape)
 
@@ -31,14 +31,14 @@ class single_channel_interp(tf.keras.layers.Layer):
         x_t = x[:, :self.d_dim, :]
         m = x[:, self.d_dim:2*self.d_dim, :]
         d = x[:, 2*self.d_dim:3*self.d_dim, :]
-        time_stamp = tf.shape(x)[2]
+        time_stamp = tf.shape(input=x)[2]
         if reconstruction:
             ref_t = K.tile(d[:, :, None, :], tf.stack((1, 1, time_stamp, 1)))
             output_dim = time_stamp
         else:
             ref_t = tf.expand_dims(
                 tf.expand_dims(interpolation_grid, 1), 1)
-            output_dim = tf.shape(interpolation_grid)[-1]
+            output_dim = tf.shape(input=interpolation_grid)[-1]
         d = K.tile(d[:, :, :, None], (1, 1, 1, output_dim))
         mask = K.tile(m[:, :, :, None], (1, 1, 1, output_dim))
         x_t = K.tile(x_t[:, :, :, None], (1, 1, 1, output_dim))
@@ -46,14 +46,14 @@ class single_channel_interp(tf.keras.layers.Layer):
         a = tf.ones(tf.stack((self.d_dim, time_stamp, output_dim), axis=0))
         pos_kernel = K.log(1 + K.exp(self.kernel))
         alpha = a*pos_kernel[:, np.newaxis, np.newaxis]
-        w = tf.reduce_logsumexp(-alpha*norm + K.log(mask), axis=2)
+        w = tf.reduce_logsumexp(input_tensor=-alpha*norm + K.log(mask), axis=2)
         w1 = K.tile(w[:, :, None, :], (1, 1, time_stamp, 1))
         w1 = K.exp(-alpha*norm + K.log(mask) - w1)
         y = K.sum(w1*x_t, axis=2)
         if reconstruction:
             rep1 = tf.concat([y, w], 1)
         else:
-            w_t = tf.reduce_logsumexp(-10.0*alpha*norm + K.log(mask), axis=2)
+            w_t = tf.reduce_logsumexp(input_tensor=-10.0*alpha*norm + K.log(mask), axis=2)
             # kappa = 10
             w_t = K.tile(w_t[:, :, None, :], (1, 1, time_stamp, 1))
             w_t = K.exp(-10.0*alpha*norm + K.log(mask) - w_t)
@@ -77,28 +77,28 @@ class cross_channel_interp(tf.keras.layers.Layer):
         self.cross_channel_interp = self.add_weight(
             name='cross_channel_interp',
             shape=(self.d_dim, self.d_dim),
-            initializer=tf.keras.initializers.Identity(gain=1.0),
+            initializer=tf.compat.v1.keras.initializers.Identity(gain=1.0),
             trainable=True)
 
         super(cross_channel_interp, self).build(input_shape)
 
     def call(self, x, reconstruction=False):
         self.reconstruction = reconstruction
-        self.output_dim = tf.shape(x)[-1]
+        self.output_dim = tf.shape(input=x)[-1]
         cross_channel_interp = self.cross_channel_interp
         y = x[:, :self.d_dim, :]
         w = x[:, self.d_dim:2*self.d_dim, :]
         intensity = K.exp(w)
-        y = tf.transpose(y, perm=[0, 2, 1])
-        w = tf.transpose(w, perm=[0, 2, 1])
+        y = tf.transpose(a=y, perm=[0, 2, 1])
+        w = tf.transpose(a=w, perm=[0, 2, 1])
         w2 = w
         w = K.tile(w[:, :, :, None], (1, 1, 1, self.d_dim))
-        den = tf.reduce_logsumexp(w, axis=2)
+        den = tf.reduce_logsumexp(input_tensor=w, axis=2)
         w = K.exp(w2 - den)
         mean = K.mean(y, axis=1)
         mean = K.tile(mean[:, None, :], tf.stack((1, self.output_dim, 1)))
         w2 = K.dot(w*(y - mean), cross_channel_interp) + mean
-        rep1 = tf.transpose(w2, perm=[0, 2, 1])
+        rep1 = tf.transpose(a=w2, perm=[0, 2, 1])
         if reconstruction is False:
             y_trans = x[:, 2*self.d_dim:3*self.d_dim, :]
             y_trans = y_trans - rep1  # subtracting smooth from transient part
@@ -180,11 +180,11 @@ class InterpolationPredictionModel(tf.keras.Model):
             # observation at timepoint t=0 with the mean. We assume mean
             # centered data, thus the mean is zero.
             n_observed_values = tf.reduce_sum(
-                tf.cast(tf.equal(measurements, False), tf.int32),
+                input_tensor=tf.cast(tf.equal(measurements, False), tf.int32),
                 axis=0,
             )
             nothing_ever_observed = tf.squeeze(
-                tf.where(tf.equal(n_observed_values, lengths)),
+                tf.compat.v1.where(tf.equal(n_observed_values, lengths)),
                 axis=-1
             )
             indices = tf.stack(
@@ -192,25 +192,25 @@ class InterpolationPredictionModel(tf.keras.Model):
                 axis=1
             )
             Y = tf.tensor_scatter_nd_update(
-                Y, indices, tf.zeros(tf.shape(indices)[0]))
+                Y, indices, tf.zeros(tf.shape(input=indices)[0]))
             measurements = tf.tensor_scatter_nd_update(
                 measurements,
                 indices,
-                tf.ones(tf.shape(indices)[0], dtype=bool)
+                tf.ones(tf.shape(input=indices)[0], dtype=bool)
             )
 
             if self.return_sequences:
                 # In the online scenario use the timepoints provided as a grid
                 grid = X[:, 0]
-                grid_length = tf.cast(tf.shape(grid)[0], tf.int32)
+                grid_length = tf.cast(tf.shape(input=grid)[0], tf.int32)
             else:
                 # Generate a grid where imputation should take place
-                end_time = tf.reduce_max(X)
+                end_time = tf.reduce_max(input_tensor=X)
                 grid = tf.range(
                     end_time + self.imputation_stepsize,
                     delta=self.imputation_stepsize
                 )
-                grid_length = tf.cast(tf.shape(grid)[0], tf.int32)
+                grid_length = tf.cast(tf.shape(input=grid)[0], tf.int32)
 
             # We require the timepoints to be of same dimensionality than the
             # measurement values.
@@ -220,10 +220,10 @@ class InterpolationPredictionModel(tf.keras.Model):
             return (
                 (
                     demo,
-                    tf.transpose(X),
-                    tf.transpose(Y),
-                    tf.transpose(measurements),
-                    tf.transpose(grid),
+                    tf.transpose(a=X),
+                    tf.transpose(a=Y),
+                    tf.transpose(a=measurements),
+                    tf.transpose(a=grid),
                     grid_length,
                     lengths
                 ),
@@ -240,12 +240,12 @@ class InterpolationPredictionModel(tf.keras.Model):
         # Compute classification
         mask = tf.sequence_mask(
             tf.squeeze(grid_lengths, axis=-1),
-            tf.shape(grid)[-1], dtype=tf.int32)
+            tf.shape(input=grid)[-1], dtype=tf.int32)
         layer_input = tf.concat(
             (values, tf.cast(measurements, tf.float32), times), axis=1)
         sic_output = self.singe_channel_interp(layer_input, grid)
         crc_output = self.cross_channel_interp(sic_output)
-        rnn_input = tf.transpose(crc_output, perm=[0, 2, 1])
+        rnn_input = tf.transpose(a=crc_output, perm=[0, 2, 1])
 
         demo_encoded = self.demo_encoder(demo)
         rnn_output = self.rnn(rnn_input, mask=mask, initial_state=demo_encoded)
@@ -253,7 +253,7 @@ class InterpolationPredictionModel(tf.keras.Model):
         # Compute reconstruction loss
         # Reconst mask is one if values are included
         reconst_mask = tf.greater(
-            tf.random.uniform(tf.shape(measurements)), self.reconst_fraction)
+            tf.random.uniform(tf.shape(input=measurements)), self.reconst_fraction)
         context_measurements = tf.logical_and(measurements, reconst_mask)
 
         # It could be that a feature does not contain a single observation,
@@ -262,13 +262,13 @@ class InterpolationPredictionModel(tf.keras.Model):
         # dont need to fill in values into the values tensor.
         nothing_observed = tf.equal(
             tf.reduce_sum(
-                tf.cast(context_measurements, tf.int32), -1, keepdims=True),
+                input_tensor=tf.cast(context_measurements, tf.int32), axis=-1, keepdims=True),
             0
         )
-        n_elements = tf.reduce_sum(tf.cast(nothing_observed, tf.int32))
+        n_elements = tf.reduce_sum(input_tensor=tf.cast(nothing_observed, tf.int32))
         context_measurements = tf.tensor_scatter_nd_update(
             context_measurements,
-            tf.where(nothing_observed),
+            tf.compat.v1.where(nothing_observed),
             tf.ones(n_elements, dtype=bool)
         )
 
@@ -291,8 +291,8 @@ class InterpolationPredictionModel(tf.keras.Model):
         # selected to be excluded for reconstruction. This leads to a division
         # by zero and to nans. For now fix this by adding eps to the division.
         instance_wise_reconst_error = (
-            tf.reduce_sum(squared_error, axis=[1, 2]) /
-            (tf.reduce_sum(target_measurements, axis=[1, 2]) + self.eps)
+            tf.reduce_sum(input_tensor=squared_error, axis=[1, 2]) /
+            (tf.reduce_sum(input_tensor=target_measurements, axis=[1, 2]) + self.eps)
         )
         reconst_error = tf.keras.metrics.Mean(name='reconst_error')(
             instance_wise_reconst_error)
@@ -301,14 +301,14 @@ class InterpolationPredictionModel(tf.keras.Model):
         # for validation loss (in order to allow model selection based on
         # classification performance)
         def get_mean_reconst_loss():
-            return tf.reduce_mean(instance_wise_reconst_error)
+            return tf.reduce_mean(input_tensor=instance_wise_reconst_error)
         def no_loss():
             return tf.zeros((), dtype=tf.float32)
 
         reconstruction_loss = tf.cond(
-            training,
-            get_mean_reconst_loss,
-            no_loss
+            pred=training,
+            true_fn=get_mean_reconst_loss,
+            false_fn=no_loss
         )
         self.add_loss(reconstruction_loss, inputs=True)
         self.add_metric(reconst_error)

@@ -25,7 +25,7 @@ class PositionalEncoding(tf.keras.layers.Layer):
             'timescales',
             (self._num_timescales, ),
             trainable=False,
-            initializer=tf.keras.initializers.Constant(self.get_timescales())
+            initializer=tf.compat.v1.keras.initializers.Constant(self.get_timescales())
         )
 
     def __call__(self, times):
@@ -135,11 +135,11 @@ class TransformerModel(tf.keras.Model):
         if self.return_sequences:
             # If we should return sequences, then we need to transform the
             # output back into a tensor of the right shape
-            valid_observations = tf.cast(tf.where(mask), tf.int32)
+            valid_observations = tf.cast(tf.compat.v1.where(mask), tf.int32)
             output = tf.scatter_nd(
                 valid_observations,
                 output,
-                tf.concat([tf.shape(mask), tf.shape(output)[-1:]], axis=0)
+                tf.concat([tf.shape(input=mask), tf.shape(input=output)[-1:]], axis=0)
             )
             # Cut of the prediction only based on demographics
             output = output[:, 1:]

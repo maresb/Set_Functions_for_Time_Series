@@ -168,7 +168,7 @@ class Normalizer:
             def normalize_ts(ts, measurements):
                 normalized = (ts - self._ts_means) / self._ts_stds
                 # Fill nans with zeros
-                normalized = tf.where(
+                normalized = tf.compat.v1.where(
                     measurements,
                     normalized,
                     tf.zeros_like(normalized)

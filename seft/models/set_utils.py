@@ -12,7 +12,7 @@ class PaddedToSegments(tf.keras.layers.Layer):
         return (None, input_shape[-1])
 
     def call(self, inputs, mask):
-        valid_observations = tf.where(mask)
+        valid_observations = tf.compat.v1.where(mask)
         collected_values = tf.gather_nd(inputs, valid_observations)
         return collected_values, valid_observations[:, 0]
 
@@ -72,7 +72,7 @@ def cumulative_segment_wrapper(fun):
         with tf.compat.v1.name_scope(
                 None, default_name=fun.__name__+'_segment_wrapper', values=[x]):
             segments, _ = tf.unique(segment_ids)
-            n_segments = tf.shape(segments)[0]
+            n_segments = tf.shape(input=segments)[0]
             output_array = tf.TensorArray(
                 x.dtype, size=n_segments, infer_shape=False)
 
@@ -80,16 +80,16 @@ def cumulative_segment_wrapper(fun):
                 return i < n_segments
 
             def execute_cumulative_op_on_segment(i, out):
-                segment_indices = tf.where(tf.equal(segment_ids, segments[i]))
-                seg_begin = tf.reduce_min(segment_indices)
-                seg_end = tf.reduce_max(segment_indices)
+                segment_indices = tf.compat.v1.where(tf.equal(segment_ids, segments[i]))
+                seg_begin = tf.reduce_min(input_tensor=segment_indices)
+                seg_end = tf.reduce_max(input_tensor=segment_indices)
                 segment_data = x[seg_begin:seg_end+1]
                 out = out.write(i, fun(segment_data, **kwargs))
                 return i+1, out
 
             i_end, filled_array = tf.while_loop(
-                loop_cond,
-                execute_cumulative_op_on_segment,
+                cond=loop_cond,
+                body=execute_cumulative_op_on_segment,
                 loop_vars=(tf.constant(0), output_array),
                 parallel_iterations=10,
                 swap_memory=True
@@ -112,7 +112,7 @@ def cumulative_mean(tensor):
 
     """
     assert len(tensor.shape) == 2
-    n_elements = tf.cast(tf.shape(tensor)[0], tensor.dtype)
+    n_elements = tf.cast(tf.shape(input=tensor)[0], tensor.dtype)
     start = tf.constant(1, dtype=tensor.dtype)
     n_elements_summed = tf.range(start, n_elements+1, dtype=tensor.dtype)
     return tf.cumsum(tensor, axis=0) / tf.expand_dims(n_elements_summed, -1)
@@ -131,7 +131,7 @@ def cumulative_softmax(tensor):
     Returns:
     """
     assert len(tensor.shape) == 1
-    max_values = tf.reduce_max(tensor, axis=0)
+    max_values = tf.reduce_max(input_tensor=tensor, axis=0)
     normalized = tensor - max_values
 
     numerator = tf.exp(normalized)
@@ -169,13 +169,13 @@ class SegmentLayerNormalization(tf.keras.layers.Layer):
         segments, _, count = tf.unique_with_counts(segment_ids)
         divisor = tf.cast(count * inputs.get_shape()[-1], tf.float32)
         mean = tf.reduce_sum(
-            tf.math.segment_sum(inputs, segment_ids),
+            input_tensor=tf.math.segment_sum(inputs, segment_ids),
             axis=-1
         ) / divisor
         mean = tf.gather(mean, segment_ids, axis=-1)[:, None]
 
         variance = tf.reduce_sum(
-            tf.math.segment_sum((inputs - mean) ** 2, segment_ids),
+            input_tensor=tf.math.segment_sum((inputs - mean) ** 2, segment_ids),
             axis=-1
         ) / divisor
         variance = tf.gather(variance, segment_ids, axis=-1)[:, None]
@@ -214,9 +214,9 @@ class LayerNormalization(tf.keras.layers.Layer):
         return super().build(input_shape)
 
     def call(self, inputs, **kwargs):
-        mean = tf.reduce_mean(inputs, axis=self.axis, keepdims=True)
+        mean = tf.reduce_mean(input_tensor=inputs, axis=self.axis, keepdims=True)
         variance = tf.reduce_mean(
-            (inputs - mean) ** 2, axis=self.axis, keepdims=True)
+            input_tensor=(inputs - mean) ** 2, axis=self.axis, keepdims=True)
         epsilon = tf.constant(self.epsilon, dtype=tf.float32)
         normalized_inputs = (inputs - mean) / tf.sqrt(variance + epsilon)
         result = self.gain * normalized_inputs + self.bias

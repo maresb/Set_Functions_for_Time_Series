@@ -107,14 +107,14 @@ def positive_instances(*args):
     if len(args) == 3:
         data, label, sample_weights = args
 
-    return tf.math.equal(tf.reduce_max(label), 1)
+    return tf.math.equal(tf.reduce_max(input_tensor=label), 1)
 
 def negative_instances(*args):
     if len(args) == 2:
         data, label = args
     if len(args) == 3:
         data, label, sample_weights = args
-    return tf.math.equal(tf.reduce_max(label), 0)
+    return tf.math.equal(tf.reduce_max(input_tensor=label), 0)
 
 
 def build_training_iterator(dataset_name, epochs, batch_size, prepro_fn,

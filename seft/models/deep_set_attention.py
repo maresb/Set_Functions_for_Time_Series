@@ -30,7 +30,7 @@ class PositionalEncoding(tf.keras.layers.Layer):
             'timescales',
             (self._num_timescales, ),
             trainable=False,
-            initializer=tf.keras.initializers.Constant(self.get_timescales())
+            initializer=tf.compat.v1.keras.initializers.Constant(self.get_timescales())
         )
 
     def __call__(self, times):
@@ -77,7 +77,7 @@ class CumulativeSetAttentionLayer(tf.keras.layers.Layer):
         )
         self.W_q = self.add_weight(
             'W_q', (self.n_heads, self.dot_prod_dim),
-            initializer=tf.keras.initializers.Zeros()
+            initializer=tf.compat.v1.keras.initializers.Zeros()
         )
 
     def compute_output_shape(self, input_shape):
@@ -136,7 +136,7 @@ class SetAttentionLayer(tf.keras.layers.Layer):
         )
         self.W_q = self.add_weight(
             'W_q', (self.n_heads, self.dot_prod_dim),
-            initializer=tf.keras.initializers.Zeros()
+            initializer=tf.compat.v1.keras.initializers.Zeros()
         )
 
     def call(self, inputs, segment_ids, lengths, training=None):
@@ -147,7 +147,7 @@ class SetAttentionLayer(tf.keras.layers.Layer):
             if self.attn_dropout > 0:
                 mask = (
                     tf.random.uniform(
-                        tf.shape(input_tensor)[:-1]
+                        tf.shape(input=input_tensor)[:-1]
                     ) < self.attn_dropout)
                 return (
                     input_tensor
@@ -343,7 +343,7 @@ class DeepSetAttentionModel(tf.keras.Model):
             # Remove heads dimension
             agg = tf.reshape(
                 agg,
-                tf.stack([tf.shape(agg)[0], tf.constant(-1)], axis=0)
+                tf.stack([tf.shape(input=agg)[0], tf.constant(-1)], axis=0)
             )
 
             predictions_mask = tf.sequence_mask(pred_lengths)
@@ -364,13 +364,13 @@ class DeepSetAttentionModel(tf.keras.Model):
             gathered_embeddings.set_shape([None, None])
             output = self.rho(gathered_embeddings)
 
-            valid_predictions = tf.cast(tf.where(predictions_mask), tf.int32)
+            valid_predictions = tf.cast(tf.compat.v1.where(predictions_mask), tf.int32)
 
             output = tf.scatter_nd(
                 valid_predictions,
                 output,
                 tf.concat(
-                    [tf.shape(predictions_mask), tf.shape(output)[-1:]],
+                    [tf.shape(input=predictions_mask), tf.shape(input=output)[-1:]],
                     axis=0
                 )
             )
@@ -426,10 +426,10 @@ class DeepSetAttentionModel(tf.keras.Model):
 
         # We additionally have the encoded demographics as a set element
         mask = tf.sequence_mask(lengths+1, name='mask')
-        valid_observations = tf.cast(tf.where(mask), tf.int32)
+        valid_observations = tf.cast(tf.compat.v1.where(mask), tf.int32)
         out_shape = tf.concat(
             [
-                tf.shape(combined_with_demo)[:-1],
+                tf.shape(input=combined_with_demo)[:-1],
                 tf.constant([1])
             ],
             axis=0,
@@ -566,7 +566,7 @@ class DeepSetAttentionModel(tf.keras.Model):
             if self._n_modalities is None:
                 self._n_modalities = int(measurements.get_shape()[-1])
             X = tf.expand_dims(X, -1)
-            measurement_positions = tf.cast(tf.where(measurements), tf.int32)
+            measurement_positions = tf.cast(tf.compat.v1.where(measurements), tf.int32)
             X_indices = measurement_positions[:, 0]
             Y_indices = measurement_positions[:, 1]
 
@@ -574,12 +574,12 @@ class DeepSetAttentionModel(tf.keras.Model):
             gathered_Y = tf.gather_nd(Y, measurement_positions)
             gathered_Y = tf.expand_dims(gathered_Y, axis=-1)
 
-            length = tf.shape(X_indices)[0]
+            length = tf.shape(input=X_indices)[0]
             if self.return_sequences:
                 # We need to know now many prediction values each instance
                 # should have when doing online prediction
-                prediction_length = tf.shape(labels)[0]
-                counts = tf.reduce_sum(tf.cast(measurements, tf.int64), axis=1)
+                prediction_length = tf.shape(input=labels)[0]
+                counts = tf.reduce_sum(input_tensor=tf.cast(measurements, tf.int64), axis=1)
                 return (demo, gathered_X, gathered_Y, Y_indices, length, counts, prediction_length), labels
             else:
                 return (demo, gathered_X, gathered_Y, Y_indices, length), labels

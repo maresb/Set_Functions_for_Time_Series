@@ -31,17 +31,17 @@ class ResNetBlock(tf.keras.layers.Layer):
 
 def build_mask(data, lengths):
     """Create mask for data tensor according to lengths."""
-    mask = tf.sequence_mask(lengths, maxlen=tf.shape(data)[1], dtype=tf.int32,
+    mask = tf.sequence_mask(lengths, maxlen=tf.shape(input=data)[1], dtype=tf.int32,
                             name='mask')
     return mask
 
 
 # pylint: disable=missing-docstring
 def mean_squared_logarithmic_error(y_true, y_pred):
-    first_log = tf.log(K.clip(y_pred, K.epsilon(), None) + 1.)
-    second_log = tf.log(K.clip(y_true, K.epsilon(), None) + 1.)
+    first_log = tf.math.log(K.clip(y_pred, K.epsilon(), None) + 1.)
+    second_log = tf.math.log(K.clip(y_true, K.epsilon(), None) + 1.)
     return tf.reduce_mean(
-        tf.squared_difference(first_log, second_log), axis=-1)
+        input_tensor=tf.math.squared_difference(first_log, second_log), axis=-1)
 
 
 def mask_observations(data, mask):
@@ -103,17 +103,17 @@ def training_placeholder():
         tf.placeholder_with_default(False, name='is_training')
     """
     try:
-        training = tf.get_default_graph().get_tensor_by_name('is_training:0')
+        training = tf.compat.v1.get_default_graph().get_tensor_by_name('is_training:0')
     except KeyError:
         # We need to set this variable scope, otherwise the name of the
         # placeholder would be dependent on the variable scope of the caller
-        cur_scope = tf.get_variable_scope().name
+        cur_scope = tf.compat.v1.get_variable_scope().name
         if cur_scope == '':
-            training = tf.placeholder_with_default(
+            training = tf.compat.v1.placeholder_with_default(
                 False, name='is_training', shape=[])
         else:
-            with tf.variable_scope('/'):
-                training = tf.placeholder_with_default(
+            with tf.compat.v1.variable_scope('/'):
+                training = tf.compat.v1.placeholder_with_default(
                     False, name='is_training', shape=[])
     return training
 
@@ -129,7 +129,7 @@ def add_scope(fn):
         class_name_scope = self.name
         function_name_scope = fn_name.replace('_', '-')
         with tf.name_scope(None):
-            with tf.name_scope(class_name_scope+function_name_scope):
+            with tf.compat.v1.name_scope(class_name_scope+function_name_scope):
                 return fn(self, *args, **kwargs)
     return wrapped_fn
 
@@ -156,12 +156,12 @@ def normalized_l2_regularizer(scale, scope=None):
 
     def l2(weights):
         """Apply l2 regularization to weights."""
-        with tf.name_scope(scope, 'norm_l2_regularizer', [weights]) as name:
-            my_scale = tf.convert_to_tensor(scale,
+        with tf.compat.v1.name_scope(scope, 'norm_l2_regularizer', [weights]) as name:
+            my_scale = tf.convert_to_tensor(value=scale,
                                             dtype=weights.dtype.base_dtype,
                                             name='scale')
             size_of_tensor = tf.cast(
-                tf.reduce_prod(tf.shape(weights)),
+                tf.reduce_prod(input_tensor=tf.shape(input=weights)),
                 weights.dtype.base_dtype
             )
             return tf.multiply(
@@ -175,13 +175,13 @@ def normalized_l2_regularizer(scale, scope=None):
 
 def pad_and_expand(tensor, maxlen):
     """Pad 1D tensor along last dim and add zeroth dimension for stacking."""
-    padding_length = maxlen - tf.shape(tensor)[-1]
-    padded = tf.pad(tensor, [[0, padding_length]])
+    padding_length = maxlen - tf.shape(input=tensor)[-1]
+    padded = tf.pad(tensor=tensor, paddings=[[0, padding_length]])
     return tf.expand_dims(padded, axis=0)
 
 
 def pad_and_expand2D(tensor, maxlen):
     """Pad 2D tensor along first dim and add zeroth dimension for stacking."""
-    padding_length = maxlen - tf.shape(tensor)[0]
-    padded = tf.pad(tensor, [[0, padding_length], [0, 0]])
+    padding_length = maxlen - tf.shape(input=tensor)[0]
+    padded = tf.pad(tensor=tensor, paddings=[[0, padding_length], [0, 0]])
     return tf.expand_dims(padded, axis=0)

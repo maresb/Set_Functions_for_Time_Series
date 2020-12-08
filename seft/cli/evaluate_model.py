@@ -56,20 +56,20 @@ def expand_time_into_batch(index, inputs, labels):
         padding_length = tf.expand_dims(lengths, 0) - i
         times_expanded = times_expanded.write(
             i-1,
-            tf.concat([times[:i], tf.zeros(tf.concat([padding_length, tf.shape(times)[1:]], 0))], axis=0)
+            tf.concat([times[:i], tf.zeros(tf.concat([padding_length, tf.shape(input=times)[1:]], 0))], axis=0)
         )
         values_expanded = values_expanded.write(
             i-1,
-            tf.concat([values[:i], tf.zeros(tf.concat([padding_length, tf.shape(values)[1:]], 0))], axis=0)
+            tf.concat([values[:i], tf.zeros(tf.concat([padding_length, tf.shape(input=values)[1:]], 0))], axis=0)
         )
         measurements_expanded = measurements_expanded.write(
             i-1,
-            tf.concat([measurements[:i], tf.zeros(tf.concat([padding_length, tf.shape(measurements)[1:]], 0), dtype=bool)], axis=0)
+            tf.concat([measurements[:i], tf.zeros(tf.concat([padding_length, tf.shape(input=measurements)[1:]], 0), dtype=bool)], axis=0)
         )
         lengths_expanded = lengths_expanded.write(i-1, i)
         labels_expanded = labels_expanded.write(
             i-1,
-            tf.concat([labels[:i], tf.fill(tf.concat([padding_length, tf.shape(labels)[1:]], 0), -100)], axis=0)
+            tf.concat([labels[:i], tf.fill(tf.concat([padding_length, tf.shape(input=labels)[1:]], 0), -100)], axis=0)
         )
 
     times_expanded = times_expanded.stack()

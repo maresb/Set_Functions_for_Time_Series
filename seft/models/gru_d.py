@@ -108,7 +108,7 @@ class GRUDCell(GRUCell):
                     tf.zeros(tf.stack([batch_size, self.units])),
                     tf.zeros(tf.stack([batch_size, self._input_dim])),
                     tf.tile(
-                        tf.reduce_max(inputs.times, axis=1),
+                        tf.reduce_max(input_tensor=inputs.times, axis=1),
                         [1, self._input_dim]
                     )
                 )
@@ -267,13 +267,13 @@ class GRUDCell(GRUCell):
         # and `x_keep_t` for the next time step
 
         if self.input_decay is not None:
-            x_keep_t = tf.where(input_m, input_x, x_keep_tm1)
-            x_t = tf.where(input_m, input_x, gamma_di * x_keep_t)
+            x_keep_t = tf.compat.v1.where(input_m, input_x, x_keep_tm1)
+            x_t = tf.compat.v1.where(input_m, input_x, gamma_di * x_keep_t)
         elif self.x_imputation == 'forward':
-            x_t = tf.where(input_m, input_x, x_keep_tm1)
+            x_t = tf.compat.v1.where(input_m, input_x, x_keep_tm1)
             x_keep_t = x_t
         elif self.x_imputation == 'zero':
-            x_t = tf.where(input_m, input_x, K.zeros_like(input_x))
+            x_t = tf.compat.v1.where(input_m, input_x, K.zeros_like(input_x))
             x_keep_t = x_t
         elif self.x_imputation == 'raw':
             x_t = input_x
@@ -338,7 +338,7 @@ class GRUDCell(GRUCell):
         h_t = z_t * h_tm1 + (1 - z_t) * hh_t
 
         # get s_prev_t
-        s_prev_t = tf.where(input_m,
+        s_prev_t = tf.compat.v1.where(input_m,
                             K.tile(input_s, [1, self.state_size[-1]]),
                             s_prev_tm1)
         return h_t, GRUDState(h_t, x_keep_t, s_prev_t)
@@ -519,7 +519,7 @@ class GRUDModel(tf.keras.Model):
         demo_encoded = self.demo_encoder(demo)
         initial_state = GRUDState(
             demo_encoded,
-            tf.zeros(tf.stack([tf.shape(demo)[0], self.rnn.cell._input_dim])),
+            tf.zeros(tf.stack([tf.shape(input=demo)[0], self.rnn.cell._input_dim])),
             tf.tile(times[:, 0, :], [1, self.rnn.cell._input_dim])
         )
 
