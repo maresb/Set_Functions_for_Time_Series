@@ -633,7 +633,7 @@ marker = "sys_platform != \"linux\" or sys_platform == \"linux\""
 name = "tensorboard"
 optional = false
 python-versions = ">= 2.7, != 3.0.*, != 3.1.*"
-version = "2.3.1"
+version = "2.3.0"
 
 [package.dependencies]
 absl-py = ">=0.4"
