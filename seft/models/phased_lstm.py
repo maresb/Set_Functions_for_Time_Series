@@ -12,7 +12,7 @@ from collections import namedtuple
 
 import tensorflow as tf
 from tensorflow.keras.layers import Dense
-from tensorflow.nn.rnn_cell import LSTMStateTuple
+from tensorflow.compat.v1.nn.rnn_cell import LSTMStateTuple
 
 from .delta_t_utils import get_delta_t
 
